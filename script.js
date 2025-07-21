@@ -3,7 +3,7 @@ const ctx = canvas.getContext("2d")
 canvas.width = 800
 canvas.height = 600
 let platforms = []
-
+let maxaldo2014
 // Объект для обработки клавиш (влево, вправо и прыжок)
 let keys = {
     left: false,
@@ -69,6 +69,7 @@ class Hero {
         this.jumpPower = 10
         this.isJumping = false
         this.isOnGround = false
+
     }
     draw() {
         ctx.fillStyle = ("orange")
@@ -84,24 +85,46 @@ class Hero {
         if (keys.right) {
             this.x += this.speedX
         }
-
+        // Если герой стоит на платформе
         if (this.isOnGround) {
             this.speedY = 0
         }
         else {
 
             //  Если игрок падает, то его скорость падения постоянно растет
-            this.speedY += 0.1
+            this.speedY += this.gravity
         }
         this.y = this.y + this.speedY
 
     }
-    
-    checkCollision(){
-        this.isOnGround=false 
-        
+
+    jump() {
+        if (this.isOnGround) {
+            this.speedY -= this.jumpPower
+            this.isOnGround = false
+        }
+    }
+
+    checkCollision() {
+        this.isOnGround = false
+        // Программа берет каждую платформу и проверяет, касается ли её герой
+        platforms.forEach(platform => {
+            if (this.x < platform.x + platform.width &&
+                this.x + this.width > platform.x &&
+                this.y + this.height <= platform.y + platform.height &&
+                this.y + this.height + this.speedY >= platform.y) {
+
+                if (this.speedY >= 0) {
+                    this.y = platform.y - this.height;
+                    this.isOnGround = true;
+                    this.isJumping = false;
+                }
+            }
+        });
+
     }
 }
+
 
 // draw()
 document.addEventListener('keydown', (event) => {
@@ -115,16 +138,33 @@ document.addEventListener('keydown', (event) => {
         keys.jump = true;
     }
 });
-const maxaldo2014 = new Hero(770, -11, 50, 50)
-
+document.addEventListener('keyup', (event) => {
+    if (event.key === 'ArrowLeft' || event.key === 'a') {
+        keys.left = false;
+    }
+    if (event.key === 'ArrowRight' || event.key === 'd') {
+        keys.right = false;
+    }
+    if (event.key === ' ' || event.key === 'ArrowUp') {
+        keys.jump = false;
+    }
+});
+setTimeout(function () {
+    maxaldo2014 = new Hero(770, -11, 50, 50)
+}, 2000)
 
 // Функция, которая вызывает сама себя постоянно и очень часто
 // Она обновляет состояние игры
 function update(time) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    maxaldo2014.move()
-    maxaldo2014.draw()
-
+    if (maxaldo2014) {
+        maxaldo2014.draw()
+        maxaldo2014.move()
+        maxaldo2014.checkCollision()
+    }
+    if (keys.jump){
+       maxaldo2014.jump() 
+    }
     platforms.forEach(platform => {
         platform.move();
         platform.draw();
@@ -133,9 +173,12 @@ function update(time) {
     if (time - lastTime > interval) {
         createPlatform()
         lastTime = time
+        interval=Math.random()*3000
     }
     // Функция для добавления общей анимации на сайте
     requestAnimationFrame(update);
 
 }
 update(0)
+
+ 
